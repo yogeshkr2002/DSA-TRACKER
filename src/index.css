@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional global tweaks to ensure consistent look */
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  background-color: #000; /* your component already uses bg-black */
+}
