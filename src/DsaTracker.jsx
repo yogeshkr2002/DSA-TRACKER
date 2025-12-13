@@ -554,7 +554,7 @@ export default function DSATracker() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-6xl font-black mb-3 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              FAANG DESTROYER
+              DSA TRACKER
             </h1>
             <p className="text-cyan-400 font-mono text-sm sm:text-base mb-4">
               <Terminal className="inline w-4 h-4 mr-2" />
