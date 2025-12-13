@@ -14,6 +14,8 @@ import {
   Trophy,
   Star,
   Award,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 
 export default function DSATracker() {
@@ -38,6 +40,7 @@ export default function DSATracker() {
           },
         ];
   });
+
   const [newSectionName, setNewSectionName] = useState("");
   const [newProblem, setNewProblem] = useState({});
   const [stats, setStats] = useState({ total: 0, completed: 0 });
@@ -58,6 +61,8 @@ export default function DSATracker() {
   });
   const [streak, setStreak] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [searchQueries, setSearchQueries] = useState({});
+  const [sortOrders, setSortOrders] = useState({});
 
   useEffect(() => {
     localStorage.setItem("dsa-sections", JSON.stringify(sections));
@@ -158,14 +163,6 @@ export default function DSATracker() {
     setDeleteModal({ show: false, type: "", id: null, sectionId: null });
   };
 
-  const openDeleteModal = (type, id, sectionId = null) => {
-    setDeleteModal({ show: true, type, id, sectionId });
-  };
-
-  const closeDeleteModal = () => {
-    setDeleteModal({ show: false, type: "", id: null, sectionId: null });
-  };
-
   const confirmDelete = () => {
     if (deleteModal.type === "section") {
       deleteSection(deleteModal.id);
@@ -189,17 +186,6 @@ export default function DSATracker() {
     }
   };
 
-  const closeEditModal = () => {
-    setEditModal({
-      show: false,
-      sectionId: null,
-      problemId: null,
-      title: "",
-      link: "",
-      difficulty: "Medium",
-    });
-  };
-
   const saveEdit = () => {
     setSections(
       sections.map((s) =>
@@ -220,7 +206,14 @@ export default function DSATracker() {
           : s
       )
     );
-    closeEditModal();
+    setEditModal({
+      show: false,
+      sectionId: null,
+      problemId: null,
+      title: "",
+      link: "",
+      difficulty: "Medium",
+    });
   };
 
   const toggleProblem = (sectionId, problemId) => {
@@ -260,6 +253,31 @@ export default function DSATracker() {
       ...newProblem,
       [sectionId]: { ...newProblem[sectionId], [field]: value },
     });
+  };
+
+  const toggleSort = (sectionId) => {
+    const currentOrder = sortOrders[sectionId] || "original";
+    const nextOrder = currentOrder === "original" ? "difficulty" : "original";
+    setSortOrders({ ...sortOrders, [sectionId]: nextOrder });
+  };
+
+  const getFilteredAndSortedProblems = (sectionId, problems) => {
+    const query = searchQueries[sectionId]?.toLowerCase() || "";
+    let filtered = problems.filter((p) =>
+      p.title.toLowerCase().includes(query)
+    );
+
+    const sortOrder = sortOrders[sectionId] || "original";
+    if (sortOrder === "difficulty") {
+      const difficultyOrder = { Easy: 1, Medium: 2, Hard: 3 };
+      filtered = [...filtered].sort((a, b) => {
+        const orderA = difficultyOrder[a.difficulty] || 2;
+        const orderB = difficultyOrder[b.difficulty] || 2;
+        return orderA - orderB;
+      });
+    }
+
+    return filtered;
   };
 
   const percentage =
@@ -400,7 +418,14 @@ export default function DSATracker() {
             </p>
             <div className="flex gap-3">
               <button
-                onClick={closeDeleteModal}
+                onClick={() =>
+                  setDeleteModal({
+                    show: false,
+                    type: "",
+                    id: null,
+                    sectionId: null,
+                  })
+                }
                 className="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition font-mono font-bold border border-gray-600"
               >
                 ABORT
@@ -429,7 +454,16 @@ export default function DSATracker() {
                 </h3>
               </div>
               <button
-                onClick={closeEditModal}
+                onClick={() =>
+                  setEditModal({
+                    show: false,
+                    sectionId: null,
+                    problemId: null,
+                    title: "",
+                    link: "",
+                    difficulty: "Medium",
+                  })
+                }
                 className="text-gray-400 hover:text-white transition"
               >
                 <X size={24} />
@@ -481,7 +515,16 @@ export default function DSATracker() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={closeEditModal}
+                onClick={() =>
+                  setEditModal({
+                    show: false,
+                    sectionId: null,
+                    problemId: null,
+                    title: "",
+                    link: "",
+                    difficulty: "Medium",
+                  })
+                }
                 className="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition font-mono font-bold border border-gray-600"
               >
                 CANCEL
@@ -511,7 +554,7 @@ export default function DSATracker() {
               </div>
             </div>
             <h1 className="text-4xl sm:text-6xl font-black mb-3 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              DSA TRACKER
+              FAANG DESTROYER
             </h1>
             <p className="text-cyan-400 font-mono text-sm sm:text-base mb-4">
               <Terminal className="inline w-4 h-4 mr-2" />
@@ -637,6 +680,11 @@ export default function DSATracker() {
           const total = section.problems.length;
           const sectionPercentage =
             total > 0 ? Math.round((completed / total) * 100) : 0;
+          const filteredProblems = getFilteredAndSortedProblems(
+            section.id,
+            section.problems
+          );
+          const sortOrder = sortOrders[section.id] || "original";
 
           return (
             <div key={section.id} className="mb-6 animate-slide-up">
@@ -669,7 +717,14 @@ export default function DSATracker() {
                       </div>
                     </div>
                     <button
-                      onClick={() => openDeleteModal("section", section.id)}
+                      onClick={() =>
+                        setDeleteModal({
+                          show: true,
+                          type: "section",
+                          id: section.id,
+                          sectionId: null,
+                        })
+                      }
                       className="text-red-500 hover:text-red-400 transition p-2 hover:bg-red-500/20 rounded-lg flex-shrink-0 transform hover:scale-110"
                     >
                       <Trash2 size={20} className="sm:w-6 sm:h-6" />
@@ -679,6 +734,38 @@ export default function DSATracker() {
 
                 {section.expanded && (
                   <div className="bg-black/90 backdrop-blur-sm p-4 sm:p-5 border-t-2 border-purple-500/30">
+                    <div className="mb-5 p-4 bg-cyan-500/10 border-2 border-cyan-500 rounded-xl">
+                      <h4 className="text-cyan-400 font-mono font-bold mb-3 text-sm flex items-center gap-2">
+                        <Search size={16} />
+                        SEARCH & FILTER
+                      </h4>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <input
+                          type="text"
+                          value={searchQueries[section.id] || ""}
+                          onChange={(e) =>
+                            setSearchQueries({
+                              ...searchQueries,
+                              [section.id]: e.target.value,
+                            })
+                          }
+                          placeholder="Type to search problems..."
+                          className="flex-1 px-4 py-3 bg-black border-2 border-cyan-500 rounded-lg focus:outline-none focus:border-cyan-400 text-white font-mono text-sm"
+                        />
+                        <button
+                          onClick={() => toggleSort(section.id)}
+                          className={`px-6 py-3 rounded-lg font-mono font-bold text-sm flex items-center justify-center gap-2 transition whitespace-nowrap min-w-[140px] ${
+                            sortOrder === "difficulty"
+                              ? "bg-cyan-500 text-black"
+                              : "bg-gray-700 text-cyan-400 border-2 border-cyan-500"
+                          }`}
+                        >
+                          <ArrowUpDown size={18} />
+                          {sortOrder === "difficulty" ? "SORTED" : "SORT"}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="mb-5 p-4 bg-purple-900/20 border-2 border-purple-500/50 rounded-xl">
                       <h4 className="font-bold text-purple-400 mb-3 font-mono flex items-center gap-2 text-sm sm:text-base">
                         <Plus size={18} />
@@ -732,104 +819,112 @@ export default function DSATracker() {
                       </div>
                     </div>
 
-                    {section.problems.length === 0 ? (
-                      <p className="text-gray-500 text-center py-8 font-mono text-sm">
-                        [ QUEUE EMPTY ] → Deploy your first challenge
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {section.problems.map((problem) => (
-                          <div
-                            key={problem.id}
-                            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all transform hover:scale-[1.02] ${
-                              problem.completed
-                                ? "bg-green-900/30 border-green-500 shadow-lg shadow-green-500/20"
-                                : "bg-gray-900/50 border-cyan-500/50 hover:border-cyan-500"
-                            }`}
-                          >
-                            <button
-                              onClick={() =>
-                                toggleProblem(section.id, problem.id)
-                              }
-                              className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg border-2 flex items-center justify-center transition-all font-bold transform hover:scale-110 ${
+                    <div className="mt-5">
+                      {section.problems.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8 font-mono text-sm">
+                          [ QUEUE EMPTY ] → Deploy your first challenge
+                        </p>
+                      ) : filteredProblems.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8 font-mono text-sm">
+                          [ NO RESULTS ] → No problems match your search
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {filteredProblems.map((problem) => (
+                            <div
+                              key={problem.id}
+                              className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all transform hover:scale-[1.02] ${
                                 problem.completed
-                                  ? "bg-green-500 border-green-400 shadow-lg shadow-green-500/50"
-                                  : "border-cyan-500 hover:bg-cyan-500/30"
+                                  ? "bg-green-900/30 border-green-500 shadow-lg shadow-green-500/20"
+                                  : "bg-gray-900/50 border-cyan-500/50 hover:border-cyan-500"
                               }`}
                             >
-                              {problem.completed && (
-                                <Check
-                                  size={20}
-                                  className="text-black font-bold"
-                                />
-                              )}
-                            </button>
-
-                            <span
-                              className={`flex-1 font-mono font-bold text-sm sm:text-base break-words ${
-                                problem.completed
-                                  ? "text-green-400"
-                                  : "text-cyan-100"
-                              }`}
-                            >
-                              {problem.title}
-                            </span>
-
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <span
-                                className={`px-3 py-1 rounded-full font-mono font-bold text-xs ${
-                                  problem.difficulty === "Easy"
-                                    ? "bg-green-500/20 text-green-400 border border-green-500"
-                                    : problem.difficulty === "Medium"
-                                    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500"
-                                    : "bg-red-500/20 text-red-400 border border-red-500"
+                              <button
+                                onClick={() =>
+                                  toggleProblem(section.id, problem.id)
+                                }
+                                className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg border-2 flex items-center justify-center transition-all font-bold transform hover:scale-110 ${
+                                  problem.completed
+                                    ? "bg-green-500 border-green-400 shadow-lg shadow-green-500/50"
+                                    : "border-cyan-500 hover:bg-cyan-500/30"
                                 }`}
                               >
-                                {problem.difficulty?.toUpperCase() || "MEDIUM"}
+                                {problem.completed && (
+                                  <Check
+                                    size={20}
+                                    className="text-black font-bold"
+                                  />
+                                )}
+                              </button>
+
+                              <span
+                                className={`flex-1 font-mono font-bold text-sm sm:text-base break-words ${
+                                  problem.completed
+                                    ? "text-green-400"
+                                    : "text-cyan-100"
+                                }`}
+                              >
+                                {problem.title}
                               </span>
 
-                              {problem.link && (
-                                <a
-                                  href={problem.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white px-3 py-2 rounded-lg transition font-mono text-xs sm:text-sm font-bold shadow-lg transform hover:scale-105"
-                                  title="Launch Problem"
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span
+                                  className={`px-3 py-1 rounded-full font-mono font-bold text-xs ${
+                                    problem.difficulty === "Easy"
+                                      ? "bg-green-500/20 text-green-400 border border-green-500"
+                                      : problem.difficulty === "Medium"
+                                      ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500"
+                                      : "bg-red-500/20 text-red-400 border border-red-500"
+                                  }`}
                                 >
-                                  <span className="hidden sm:inline">
-                                    SOLVE
-                                  </span>
-                                  <span className="sm:hidden">GO</span>
-                                </a>
-                              )}
+                                  {problem.difficulty?.toUpperCase() ||
+                                    "MEDIUM"}
+                                </span>
 
-                              <button
-                                onClick={() =>
-                                  openEditModal(section.id, problem.id)
-                                }
-                                className="text-purple-400 hover:text-purple-300 transition p-2 hover:bg-purple-500/20 rounded-lg transform hover:scale-110"
-                                title="Edit"
-                              >
-                                <Edit2 size={18} />
-                              </button>
+                                {problem.link && (
+                                  <a
+                                    href={problem.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white px-3 py-2 rounded-lg transition font-mono text-xs sm:text-sm font-bold shadow-lg transform hover:scale-105"
+                                    title="Launch Problem"
+                                  >
+                                    <span className="hidden sm:inline">
+                                      SOLVE
+                                    </span>
+                                    <span className="sm:hidden">GO</span>
+                                  </a>
+                                )}
 
-                              <button
-                                onClick={() =>
-                                  openDeleteModal(
-                                    "problem",
-                                    problem.id,
-                                    section.id
-                                  )
-                                }
-                                className="text-red-500 hover:text-red-400 transition p-2 hover:bg-red-500/20 rounded-lg transform hover:scale-110"
-                              >
-                                <Trash2 size={18} />
-                              </button>
+                                <button
+                                  onClick={() =>
+                                    openEditModal(section.id, problem.id)
+                                  }
+                                  className="text-purple-400 hover:text-purple-300 transition p-2 hover:bg-purple-500/20 rounded-lg transform hover:scale-110"
+                                  title="Edit"
+                                >
+                                  <Edit2 size={18} />
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    setDeleteModal({
+                                      show: true,
+                                      type: "problem",
+                                      id: problem.id,
+                                      sectionId: section.id,
+                                    })
+                                  }
+                                  className="text-red-500 hover:text-red-400 transition p-2 hover:bg-red-500/20 rounded-lg transform hover:scale-110"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
